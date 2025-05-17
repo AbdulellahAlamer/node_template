@@ -1,74 +1,112 @@
-# Node.js Backend Template
+# Node Template API 🚀
 
-This repository provides a basic Node.js backend boilerplate to help you quickly get started with a RESTful API server. It's structured with separation of concerns in mind, making it easier to scale and maintain.
+A lightweight yet flexible **Node.js backend boilerplate** that scales from weekend side‑project to production. It ships with a plug‑and‑play database factory (MongoDB, MySQL or Postgres), JWT‑based authentication and a clean, service‑oriented folder layout so your code stays readable as your team (and features) grow.
 
-## Features
+&nbsp;
 
-- Express.js server
-- Route, controller, and middleware separation
-- Environment variable management with `.env`
-- MongoDB connection template using Mongoose (commented for setup)
-- Basic error handling and process stability logic
+## ✨ Features
 
-## Folder Structure
+| Domain | What you get |
+| ------ | ------------ |
+| **Server** | Express 4, Helmet, CORS, compression, cookie‑parser, Morgan logger, body‑parser, centralised error‑handler, rate‑limiter |
+| **Auth** | Password + JWT login / signup, access & refresh tokens in HTTP‑only cookies, role‑based guards (`protectRoute`, `isAdmin`) |
+| **Database** | Factory pattern connects to **MongoDB (Mongoose)**, **MySQL (mysql2/promise)** or **Postgres (pg)** – just set `DB_TYPE` |
+| **Structure** | Clearly separated *routes → controllers → middleware*, plus reusable utils |
+| **Dev‑XP** | Nodemon auto‑reload, dotenv config loader, coloured console banners |
+| **Prod‑Ready** | Graceful shutdown, security headers, input sanitisation, environment‑driven config |
+
+&nbsp;
+
+## 📂 Folder Structure
 
 ```
-├── controllers       # Business logic handlers
-├── middleware        # Custom Express middleware (e.g., error handling)
-├── models            # Database schemas (e.g., Mongoose models)
-├── routes            # API route definitions
-├── app.js            # Express app configuration
-├── server.js         # Entry point to start the server
-├── config.env        # Environment variables file
-├── .gitignore        # Files/folders to ignore in Git
-├── package.json      # Project metadata and dependencies
-└── package-lock.json # Locked dependency versions
+NODE_TEMPLATE/
+├── api/
+│   ├── index.js          # Express app (exports instance)
+│   └── server.js         # Bootstraps DB + starts HTTP server
+├── config/
+│   └── db.js             # Database factory connector
+├── controllers/          # Business‑logic per resource
+├── lib ▸ utils/          # Helper functions (e.g. generateToken)
+├── middleware/           # Auth guards, error handler, etc.
+├── models/               # Database schemas / ORMs
+├── routes/               # Express route definitions
+├── config.env            # Environment variables
+├── .gitignore
+├── package.json
+└── README.md             # ← you’re here
 ```
 
-## Getting Started
+&nbsp;
 
-### 1. Install dependencies
+## 🚀 Quick Start
 
 ```bash
+# 1) Install dependencies
 npm install
+
+# 2) Copy & edit env vars
+cp config.env.example config.env
+nano config.env            # or any editor
+
+# 3) Run in dev mode (auto‑reload)
+npm run dev
+
+# or production
+npm start
 ```
 
-### 2. Configure environment variables
+Open <http://localhost:5000> (or the port you set) and you should see the **API is running** message.
 
-Create a `.env` file (based on `config.env`) to store values like:
+&nbsp;
 
-```
-PORT=3000
-DATABASE=<your_database_url>
-DATABASE_PASSWORD=<your_db_password>
-```
+## 🔧 Environment Variables (`config.env`)
 
-### 3. Run the server
+| Key | Description | Example |
+|-----|-------------|---------|
 
-```bash
-node server.js
-```
 
-### 4. About `server.js`
+> **Tip :** only `DB_TYPE` + matching credentials are required – leave the others blank.
 
-This file serves as the main entry point of the application. It:
+&nbsp;
 
-- Loads environment variables from `config.env` using `dotenv`.
-- Imports the Express app from `app.js`.
-- (Commented) Includes a sample MongoDB connection using `mongoose` with password injection.
-- Starts the server on the port specified in the `.env` file.
-- Handles unhandled promise rejections globally to prevent the server from crashing silently.
+## 🗺️ API Overview
 
-## Contributing
+| Route | Method | Description | Auth |
+|-------|--------|-------------|------|
+
+
+&nbsp;
+
+## 🛠️ Scripts
+
+| NPM Script | Purpose |
+|------------|---------|
+| `npm run dev` | Launch server with **nodemon** & auto‑reload |
+| `npm start` | Launch server with Node (production) |
+| `npm test` | _(placeholder)_ run unit tests |
+
+&nbsp;
+
+## 🤝 Contributing
 
 Contributions are welcome! If you'd like to improve this template, feel free to fork the repository and submit a pull request.
 
 ### Steps to Contribute
-
 1. Fork the repository.
-2. Create a new branch: `git checkout -b feature-name`.
-3. Make your changes and commit them: `git commit -m 'Add feature'`.
-4. Push to the branch: `git push origin feature-name`.
+2. Create a new branch: git checkout -b feature-name.
+3. Make your changes and commit them: git commit -m 'Add feature'.
+4. Push to the branch: git push origin feature-name.
 5. Open a pull request.
 
-Please follow clean coding practices and keep your changes focused. For major changes, please open an issue first to discuss what you would like to change.
+Please keep changes focused; open an issue first for large proposals.
+
+&nbsp;
+
+## 📄 License
+
+[ISC](https://opensource.org/licenses/ISC) © Abdullelah, 2025
+
+---
+
+> _Happy hacking — may your APIs always respond with **200 OK**!_
