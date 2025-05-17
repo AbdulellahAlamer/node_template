@@ -2,7 +2,7 @@
   "name": "node_template",
   "version": "1.0.0",
   "description": "",
-  "main": "app.js",
+  "main": "api/server.js",
   "scripts": {
     "dev": "nodemon server.js",
     "start": "node server.js"
