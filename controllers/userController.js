@@ -1,59 +1,120 @@
-// server/controllers/userController.js
-const bcrypt = require('bcryptjs');
-const mongoose = require('mongoose');
-const User = require('../models/userSchema');
+const userService = require('../services/userService');
 
-const stripPassword = doc => doc ? { ...doc.toObject(), password: undefined } : doc;
-
-
-// Users Endpoint
-exports.getMe = async (req, res) => {
+// Get all users (admin only)
+const getAllUsers = async (req, res, next) => {
   try {
-    // Write more code...
-  } catch (err) {
-    // You may add or edit some ...
-    console.error('getMe: ', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    // Check if user is admin
+    if (req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden: Requires admin access'
+      });
+    }
+    
+    const users = await userService.getAllUsers();
+    
+    // Return sanitized user list (no passwords)
+    const sanitizedUsers = users.map(user => {
+      const { password, ...userInfo } = user;
+      return userInfo;
+    });
+    
+    return res.json(sanitizedUsers);
+  } catch (error) {
+    next(error);
   }
 };
 
-exports.updateMe = async (req, res) => {
+
+// Get user by ID
+const getUserById = async (req, res, next) => {
   try {
-    // Write more code...
-  } catch (err) {
-    // You may add or edit some ...
-    console.error('updateMe: ', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const userId = req.params.id;
+    
+    // Users can only access their own profile unless they're an admin
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden: You can only access your own profile'
+      });
+    }
+    
+    const user = await userService.getUserById(userId);
+    
+    if (!user) {
+      return res.status(404).json({
+        error: 'User not found'
+      });
+    }
+    
+    // Return sanitized user (no password)
+    const { password, ...userInfo } = user;
+    return res.json(userInfo);
+  } catch (error) {
+    next(error);
   }
 };
 
-// Admin Endpoint
-exports.getAllUsers = async (_req, res) => {
+// Update user 
+const updateUser = async (req, res, next) => {
   try {
-    // Write more code...
-  } catch (err) {
-    // You may add or edit some ...
-    console.error('getAllUsers: ', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const userId = req.params.id;
+    
+    // Users can only update their own profile unless they're an admin
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden: You can only update your own profile'
+      });
+    }
+    
+    // Don't allow updating username through this endpoint
+    const { username, password, ...updateData } = req.body;
+    
+    const updatedUser = await userService.updateUser(userId, updateData);
+    
+    if (!updatedUser) {
+      return res.status(404).json({
+        error: 'User not found'
+      });
+    }
+    
+    // Return sanitized user (no password)
+    const { password: pass, ...userInfo } = updatedUser;
+    return res.json(userInfo);
+  } catch (error) {
+    next(error);
   }
 };
 
-exports.adminUpdateUser = async (req, res) => {
+// Delete user
+const deleteUser = async (req, res, next) => {
   try {
-    // Write more code...
-  } catch (err) {
-    // You may add or edit some ...
-    console.error('adminUpdateUser: ', err);
-    res.status(500).json({ error: 'Internal Server Error' });
+    const userId = req.params.id;
+    
+    // Users can only delete their own profile unless they're an admin
+    if (req.user.id !== userId && req.user.role !== 'admin') {
+      return res.status(403).json({
+        error: 'Forbidden: You can only delete your own profile'
+      });
+    }
+    
+    const result = await userService.deleteUser(userId);
+    
+    if (!result) {
+      return res.status(404).json({
+        error: 'User not found'
+      });
+    }
+    
+    return res.json({
+      message: 'User deleted successfully'
+    });
+  } catch (error) {
+    next(error);
   }
 };
 
-exports.adminDeleteUser = async (req, res) => {
-  try {
-    // Write more code...
-  } catch (err) {
-    // You may add or edit some ...
-    console.error('adminDeleteUser: ', err);
-    res.status(500).json({ error: 'Internal Server Error' });
-  }
+module.exports = {
+  getAllUsers,
+  getUserById,
+  updateUser,
+  deleteUser
 };
