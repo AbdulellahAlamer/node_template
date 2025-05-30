@@ -1,9 +1,9 @@
 require('dotenv').config();
+const mongoose = require('mongoose');
 
-// Database factory pattern
-const databaseConnectors = {
-  mongodb: async () => {
-    const mongoose = require('mongoose');
+// MongoDB connection configuration
+const connect = async () => {
+  try {
     const connectionString = process.env.MONGODB_URI || 
       `mongodb://${process.env.DB_HOST}:${process.env.DB_PORT}/${process.env.DB_NAME}`;
     
@@ -12,89 +12,41 @@ const databaseConnectors = {
       useUnifiedTopology: true
     });
     
+    console.log('Connected to MongoDB successfully');
     return {
       type: 'mongodb',
       client: mongoose,
       isConnected: mongoose.connection.readyState === 1
     };
-  },
-  
-  mysql: async () => {
-    const mysql = require('mysql2/promise');
-    const pool = mysql.createPool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      port: process.env.DB_PORT || 3306,
-      waitForConnections: true,
-      connectionLimit: 10
-    });
-    
-    // Test connection
-    await pool.getConnection();
+  } catch (error) {
+    console.error('MongoDB connection error:', error.message);
+    throw error;
+  }
+};
 
+// Health check function
+const checkHealth = async () => {
+  try {
+    const isConnected = mongoose.connection.readyState === 1;
     return {
-      type: 'mysql',
-      client: pool,
-      isConnected: true
+      type: 'mongodb',
+      status: isConnected ? 'connected' : 'disconnected',
+      details: {
+        host: mongoose.connection.host,
+        port: mongoose.connection.port,
+        database: mongoose.connection.name
+      }
     };
-  },
-  
-  postgres: async () => {
-    const { Pool } = require('pg');
-    const pool = new Pool({
-      host: process.env.DB_HOST,
-      user: process.env.DB_USER,
-      password: process.env.DB_PASSWORD,
-      database: process.env.DB_NAME,
-      port: process.env.DB_PORT || 5432
-    });
-    
-    // Test connection
-    await pool.query('SELECT NOW()');
-    
+  } catch (error) {
     return {
-      type: 'postgres',
-      client: pool,
-      isConnected: true
+      type: 'mongodb',
+      status: 'error',
+      error: error.message
     };
   }
 };
 
-// Choose database type from environment variable
-const dbType = process.env.DB_TYPE || 'mongodb';
-
-// Export the database connection function
 module.exports = {
-  connect: async () => {
-    if (!databaseConnectors[dbType]) {
-      throw new Error(`Unsupported database type: ${dbType}`);
-    }
-    
-    try {
-      const db = await databaseConnectors[dbType]();
-      console.log(`Connected to ${db.type} database`);
-      return db;
-    } catch (error) {
-      console.error(`Database connection error: ${error.message}`);
-      throw error;
-    }
-  },
-  
-  checkHealth: async () => {
-    try {
-      const db = await databaseConnectors[dbType]();
-      return {
-        type: db.type,
-        status: 'connected'
-      };
-    } catch (error) {
-      return {
-        type: dbType,
-        status: 'disconnected',
-        error: error.message
-      };
-    }
-  }
+  connect,
+  checkHealth
 };

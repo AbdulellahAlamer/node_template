@@ -1,137 +1,101 @@
-const db = require('../config/db');
+const mongoose = require('mongoose');
+const bcrypt = require('bcrypt');
 
-// This works with the MongoDB connector option from db.js
-// If using other databases, this would need to be modified
-const createUserModel = async () => {
+const userSchema = new mongoose.Schema({
+  username: {
+    type: String,
+    required: [true, 'Username is required'],
+    unique: true,
+    trim: true,
+    minlength: [3, 'Username must be at least 3 characters long'],
+    maxlength: [30, 'Username cannot exceed 30 characters']
+  },
+  email: {
+    type: String,
+    required: [true, 'Email is required'],
+    unique: true,
+    trim: true,
+    lowercase: true,
+    match: [/^\w+([.-]?\w+)*@\w+([.-]?\w+)*(\.\w{2,3})+$/, 'Please enter a valid email']
+  },
+  password: {
+    type: String,
+    required: [true, 'Password is required'],
+    minlength: [6, 'Password must be at least 6 characters long'],
+    select: false // Don't include password in queries by default
+  },
+  role: {
+    type: String,
+    enum: ['user', 'admin'],
+    default: 'user'
+  },
+  status: {
+    type: String,
+    enum: ['active', 'inactive', 'suspended'],
+    default: 'active'
+  },
+  profile: {
+    firstName: String,
+    lastName: String,
+    avatar: String,
+    bio: String
+  },
+  lastLogin: {
+    type: Date,
+    default: null
+  },
+  passwordChangedAt: Date,
+  passwordResetToken: String,
+  passwordResetExpires: Date
+}, {
+  timestamps: true, // Adds createdAt and updatedAt fields
+  toJSON: { virtuals: true },
+  toObject: { virtuals: true }
+});
+
+// Virtual for full name
+userSchema.virtual('fullName').get(function() {
+  return `${this.profile.firstName || ''} ${this.profile.lastName || ''}`.trim();
+});
+
+// Pre-save middleware to hash password
+userSchema.pre('save', async function(next) {
+  // Only hash the password if it's modified (or new)
+  if (!this.isModified('password')) return next();
+  
   try {
-    const connection = await db.connect();
-    
-    // For MongoDB
-    if (connection.type === 'mongodb') {
-      const mongoose = connection.client;
-      
-      const userSchema = new mongoose.Schema({
-        username: { 
-          type: String, 
-          required: true, 
-          unique: true 
-        },
-        password: { 
-          type: String, 
-          required: true 
-        },
-        email: {
-          type: String,
-          required: true,
-          unique: true
-        },
-        status: {
-          type: String,
-          default: 'Active'
-        },
-        role: {
-          type: String,
-          enum: ['user', 'admin'],
-          default: 'user'
-        },
-        createdAt: {
-          type: Date,
-          default: Date.now
-        }
-      });
-      
-      // Don't recreate model if it already exists
-      return mongoose.models.User || mongoose.model('User', userSchema);
-    }
-    
-    // For MySQL
-    else if (connection.type === 'mysql') {
-      // Would define table schema and return query methods
-      // This is a simplified example
-      const pool = connection.client;
-      
-      // Create table if it doesn't exist
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id INT AUTO_INCREMENT PRIMARY KEY,
-          username VARCHAR(255) UNIQUE NOT NULL,
-          password VARCHAR(255) NOT NULL,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          status VARCHAR(50) DEFAULT 'Active',
-          role VARCHAR(50) DEFAULT 'user',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      
-      // Return an object with methods to interact with the users table
-      return {
-        findById: async (id) => {
-          const [rows] = await pool.query('SELECT * FROM users WHERE id = ?', [id]);
-          return rows[0];
-        },
-        findByUsername: async (username) => {
-          const [rows] = await pool.query('SELECT * FROM users WHERE username = ?', [username]);
-          return rows[0];
-        },
-        create: async (userData) => {
-          const { username, password, email, status, role } = userData;
-          const [result] = await pool.query(
-            'INSERT INTO users (username, password, email, status, role) VALUES (?, ?, ?, ?, ?)',
-            [username, password, email, status || 'Active', role || 'user']
-          );
-          return { id: result.insertId, ...userData };
-        }
-        // Add other methods as needed
-      };
-    }
-    
-    // For PostgreSQL
-    else if (connection.type === 'postgres') {
-      // Similar implementation to MySQL with PostgreSQL syntax
-      const pool = connection.client;
-      
-      // Create table if it doesn't exist
-      await pool.query(`
-        CREATE TABLE IF NOT EXISTS users (
-          id SERIAL PRIMARY KEY,
-          username VARCHAR(255) UNIQUE NOT NULL,
-          password VARCHAR(255) NOT NULL,
-          email VARCHAR(255) UNIQUE NOT NULL,
-          status VARCHAR(50) DEFAULT 'Active',
-          role VARCHAR(50) DEFAULT 'user',
-          created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-        )
-      `);
-      
-      // Return an object with methods to interact with the users table
-      return {
-        findById: async (id) => {
-          const result = await pool.query('SELECT * FROM users WHERE id = $1', [id]);
-          return result.rows[0];
-        },
-        findByUsername: async (username) => {
-          const result = await pool.query('SELECT * FROM users WHERE username = $1', [username]);
-          return result.rows[0];
-        },
-        create: async (userData) => {
-          const { username, password, email, status, role } = userData;
-          const result = await pool.query(
-            'INSERT INTO users (username, password, email, status, role) VALUES ($1, $2, $3, $4, $5) RETURNING *',
-            [username, password, email, status || 'Active', role || 'user']
-          );
-          return result.rows[0];
-        }
-        // Add other methods as needed
-      };
-    }
-    
-    else {
-      throw new Error(`Database type ${connection.type} not supported by User model`);
-    }
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+    next();
   } catch (error) {
-    console.error('Error creating User model:', error);
+    next(error);
+  }
+});
+
+// Method to check if password is correct
+userSchema.methods.comparePassword = async function(candidatePassword) {
+  try {
+    return await bcrypt.compare(candidatePassword, this.password);
+  } catch (error) {
     throw error;
   }
 };
 
-module.exports = createUserModel();
+// Method to check if password was changed after a certain timestamp
+userSchema.methods.changedPasswordAfter = function(timestamp) {
+  if (this.passwordChangedAt) {
+    const changedTimestamp = parseInt(this.passwordChangedAt.getTime() / 1000, 10);
+    return timestamp < changedTimestamp;
+  }
+  return false;
+};
+
+// Static method to find user by email
+userSchema.statics.findByEmail = function(email) {
+  return this.findOne({ email: email.toLowerCase() });
+};
+
+// Create and export the model
+const User = mongoose.models.User || mongoose.model('User', userSchema);
+
+module.exports = User;

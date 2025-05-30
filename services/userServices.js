@@ -2,14 +2,13 @@ const User = require('../models/user');
 
 const getAllUsers = async () => {
   try {
-    // Implementation depends on database type being used
-    // Generic implementation below
+
     let users;
     
     // For MongoDB with mongoose
     if (User.find) {
       users = await User.find({}).select('-__v');
-    } 
+    }
     // For SQL databases
     else if (User.findAll) {
       users = await User.findAll();
