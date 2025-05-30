@@ -1,112 +1,165 @@
-# Node Template API 🚀
+# Node.js Backend Template
 
-A lightweight yet flexible **Node.js backend boilerplate** that scales from weekend side‑project to production. It ships with a plug‑and‑play database factory (MongoDB, MySQL or Postgres), JWT‑based authentication and a clean, service‑oriented folder layout so your code stays readable as your team (and features) grow.
+A minimal, secure, and reusable Node.js backend template with Express and MongoDB.
 
-&nbsp;
+## Features
 
-## ✨ Features
+- Simple and reusable middleware system
+- JWT authentication
+- Request validation
+- Error handling
+- Logging
+- Security middleware
+- MongoDB integration
+- Environment configuration
 
-| Domain | What you get |
-| ------ | ------------ |
-| **Server** | Express 4, Helmet, CORS, compression, cookie‑parser, Morgan logger, body‑parser, centralised error‑handler, rate‑limiter |
-| **Auth** | Password + JWT login / signup, access & refresh tokens in HTTP‑only cookies, role‑based guards (`protectRoute`, `isAdmin`) |
-| **Database** | Factory pattern connects to **MongoDB (Mongoose)**, **MySQL (mysql2/promise)** or **Postgres (pg)** – just set `DB_TYPE` |
-| **Structure** | Clearly separated *routes → controllers → middleware*, plus reusable utils |
-| **Dev‑XP** | Nodemon auto‑reload, dotenv config loader, coloured console banners |
-| **Prod‑Ready** | Graceful shutdown, security headers, input sanitisation, environment‑driven config |
-
-&nbsp;
-
-## 📂 Folder Structure
+## Project Structure
 
 ```
-NODE_TEMPLATE/
+.
 ├── api/
-│   ├── index.js          # Express app (exports instance)
-│   └── server.js         # Bootstraps DB + starts HTTP server
+│   └── server.js
 ├── config/
-│   └── db.js             # Database factory connector
-├── controllers/          # Business‑logic per resource
-├── lib ▸ utils/          # Helper functions (e.g. generateToken)
-├── middleware/           # Auth guards, error handler, etc.
-├── models/               # Database schemas / ORMs
-├── routes/               # Express route definitions
-├── config.env            # Environment variables
-├── .gitignore
-├── package.json
-└── README.md             # ← you’re here
+│   └── db.js
+├── middleware/
+│   ├── auth.js
+│   ├── base.js
+│   ├── errorHandler.js
+│   ├── logger.js
+│   ├── security.js
+│   └── validator.js
+├── models/
+├── routes/
+├── utils/
+│   └── jwtUtils.js
+├── config.env
+├── config.env.example
+└── package.json
 ```
 
-&nbsp;
+## Quick Start
 
-## 🚀 Quick Start
+1. Clone the repository
+2. Install dependencies:
+   ```bash
+   npm install
+   ```
+3. Copy config.env.example to config.env and update values
+4. Start the server:
+   ```bash
+   npm run dev
+   ```
 
-```bash
-# 1) Install dependencies
-npm install
+## Configuration
 
-# 2) Copy & edit env vars
-cp config.env.example config.env
-nano config.env            # or any editor
+Create a config.env file with the following variables:
 
-# 3) Run in dev mode (auto‑reload)
-npm run dev
+```
+# SERVER
+NODE_ENV=development
+PORT=5000
+API_PREFIX=/api
 
-# or production
-npm start
+# MONGODB
+DATABASE=mongodb+srv://username:<password>@cluster.mongodb.net/dbname
+DATABASE_PASSWORD=your_secure_password_here
+
+# JWT
+JWT_SECRET=your-secret-key
+
+# CORS
+CORS_ORIGIN=*
+
+# Logging
+LOG_LEVEL=debug
+LOG_FORMAT=dev
 ```
 
-Open <http://localhost:5000> (or the port you set) and you should see the **API is running** message.
+## Middleware
 
-&nbsp;
+The template includes several reusable middleware components:
 
-## 🔧 Environment Variables (`config.env`)
+### Base Middleware
+- Simple factory pattern for creating middleware
+- Configurable priority and enabled state
 
-| Key | Description | Example |
-|-----|-------------|---------|
+### Logger
+- Request logging with Morgan
+- Environment-aware logging format
 
+### Error Handler
+- Centralized error handling
+- Environment-aware error messages
+- Proper error status codes
 
-> **Tip :** only `DB_TYPE` + matching credentials are required – leave the others blank.
+### Validator
+- Request validation using express-validator
+- Clear error messages
+- Async validation support
 
-&nbsp;
+### Auth
+- JWT token verification
+- Simple token extraction
+- User data attachment
 
-## 🗺️ API Overview
+### Security
+- Basic security headers with Helmet
+- CORS configuration
+- Rate limiting
 
-| Route | Method | Description | Auth |
-|-------|--------|-------------|------|
+## Usage Examples
 
+### Basic Route with Auth
+```javascript
+const { auth } = require('../middleware/auth');
+const { validator } = require('../middleware/validator');
 
-&nbsp;
+router.get('/protected', auth.fn, (req, res) => {
+  res.json({ user: req.user });
+});
+```
 
-## 🛠️ Scripts
+### Route with Validation
+```javascript
+const { validator } = require('../middleware/validator');
+const { body } = require('express-validator');
 
-| NPM Script | Purpose |
-|------------|---------|
-| `npm run dev` | Launch server with **nodemon** & auto‑reload |
-| `npm start` | Launch server with Node (production) |
-| `npm test` | _(placeholder)_ run unit tests |
+router.post('/users',
+  validator.fn([
+    body('email').isEmail(),
+    body('password').isLength({ min: 6 })
+  ]),
+  (req, res) => {
+    // Handle valid request
+  }
+);
+```
 
-&nbsp;
+## Development
 
-## 🤝 Contributing
+- Start development server: `npm run dev`
+- Run tests: `npm test`
+- Lint code: `npm run lint`
+- Format code: `npm run format`
 
-Contributions are welcome! If you'd like to improve this template, feel free to fork the repository and submit a pull request.
+## Security
 
-### Steps to Contribute
-1. Fork the repository.
-2. Create a new branch: git checkout -b feature-name.
-3. Make your changes and commit them: git commit -m 'Add feature'.
-4. Push to the branch: git push origin feature-name.
-5. Open a pull request.
+- JWT for authentication
+- Helmet for security headers
+- Rate limiting for API protection
+- CORS configuration
+- Environment variable protection
 
-Please keep changes focused; open an issue first for large proposals.
+## Best Practices
 
-&nbsp;
+- Use environment variables for configuration
+- Keep middleware simple and focused
+- Use proper error handling
+- Implement request validation
+- Follow REST API conventions
+- Use async/await for asynchronous operations
+- Implement proper logging
 
-## 📄 License
+## License
 
-[ISC](https://opensource.org/licenses/ISC) © Abdullelah, 2025
-
----
-
-> _Happy hacking — may your APIs always respond with **200 OK**!_
+ISC

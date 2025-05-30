@@ -1,25 +1,27 @@
-const jwt = require('jwt-simple');
 const { verifyToken } = require('../utils/jwtUtils');
+const createMiddleware = require('./base');
 
-const authenticate = (req, res, next) => {
-  // Check if X-Auth header exists
-  const token = req.headers['x-auth'];
-  
-  if (!token) {
-    return res.status(401).json({ error: 'Missing authentication token' });
-  }
-  
-  try {
-    // Verify and decode the token
-    const decoded = verifyToken(token);
+// Simple auth factory
+const createAuth = (options = {}) => {
+  const auth = (req, res, next) => {
+    const token = req.headers['x-auth'];
     
-    // Add user data to request for use in route handlers
-    req.user = decoded;
+    if (!token) {
+      return res.status(401).json({ error: 'No token provided' });
+    }
     
-    next();
-  } catch (error) {
-    return res.status(401).json({ error: 'Invalid authentication token' });
-  }
+    try {
+      req.user = verifyToken(token);
+      next();
+    } catch (error) {
+      res.status(401).json({ error: 'Invalid token' });
+    }
+  };
+
+  return createMiddleware(auth, { priority: 3 });
 };
 
-module.exports = authenticate;
+// Default auth
+const auth = createAuth();
+
+module.exports = { createAuth, auth };
