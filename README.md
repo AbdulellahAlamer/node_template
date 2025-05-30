@@ -1,40 +1,41 @@
 # Node.js Backend Template
 
-A minimal, secure, and reusable Node.js backend template with Express and MongoDB.
+A minimal, secure, and reusable Node.js backend template with Express and MongoDB. This template provides a solid foundation for building scalable APIs with best practices and security in mind.
 
 ## Features
 
-- Simple and reusable middleware system
-- JWT authentication
-- Request validation
-- Error handling
-- Logging
-- Security middleware
-- MongoDB integration
-- Environment configuration
+- Simple and reusable middleware system with priority-based execution
+- JWT authentication with secure token handling
+- Request validation with express-validator
+- Centralized error handling
+- Environment-aware logging
+- Security middleware (Helmet, CORS, Rate Limiting)
+- MongoDB integration with health checks
+- Environment-based configuration
+- TypeScript support ready
 
 ## Project Structure
 
 ```
 .
 ├── api/
-│   └── server.js
+│   └── server.js          # Main application entry
 ├── config/
-│   └── db.js
+│   └── db.js             # Database configuration
 ├── middleware/
-│   ├── auth.js
-│   ├── base.js
-│   ├── errorHandler.js
-│   ├── logger.js
-│   ├── security.js
-│   └── validator.js
-├── models/
-├── routes/
+│   ├── auth.js           # Authentication middleware
+│   ├── base.js           # Base middleware factory
+│   ├── errorHandler.js   # Error handling middleware
+│   ├── logger.js         # Request logging
+│   ├── security.js       # Security middleware
+│   └── validator.js      # Request validation
+├── models/               # Database models
+├── routes/              # API routes
 ├── utils/
-│   └── jwtUtils.js
-├── config.env
-├── config.env.example
-└── package.json
+│   └── jwtUtils.js      # JWT utilities
+├── config.env           # Environment variables
+├── config.env.example   # Example environment variables
+└── package.json         # Project dependencies
 ```
 
 ## Quick Start
@@ -44,8 +45,11 @@ A minimal, secure, and reusable Node.js backend template with Express and MongoD
    ```bash
    npm install
    ```
-3. Copy config.env.example to config.env and update values
-4. Start the server:
+3. Copy config.env.example to config.env and update values:
+   ```bash
+   cp config.env.example config.env
+   ```
+4. Start the development server:
    ```bash
    npm run dev
    ```
@@ -75,37 +79,50 @@ LOG_LEVEL=debug
 LOG_FORMAT=dev
 ```
 
-## Middleware
+## Middleware System
 
-The template includes several reusable middleware components:
+The template uses a priority-based middleware system. Each middleware has a priority level that determines its execution order:
+
+### Priority Levels
+- 1: Security & Logging (First)
+- 2: Validation
+- 3: Authentication
+- 100: Error Handler (Last)
 
 ### Base Middleware
-- Simple factory pattern for creating middleware
+- Factory pattern for creating middleware
 - Configurable priority and enabled state
+- Consistent middleware structure
 
 ### Logger
 - Request logging with Morgan
 - Environment-aware logging format
+- Development: Detailed logs
+- Production: Minimal logs
 
 ### Error Handler
 - Centralized error handling
 - Environment-aware error messages
 - Proper error status codes
+- Stack traces in development
 
 ### Validator
 - Request validation using express-validator
 - Clear error messages
 - Async validation support
+- Custom validation rules
 
 ### Auth
 - JWT token verification
 - Simple token extraction
 - User data attachment
+- Secure token handling
 
 ### Security
 - Basic security headers with Helmet
 - CORS configuration
 - Rate limiting
+- Request sanitization
 
 ## Usage Examples
 
@@ -135,6 +152,16 @@ router.post('/users',
 );
 ```
 
+### Custom Middleware
+```javascript
+const createMiddleware = require('./base');
+
+const customMiddleware = createMiddleware((req, res, next) => {
+  // Your middleware logic
+  next();
+}, { priority: 2 });
+```
+
 ## Development
 
 - Start development server: `npm run dev`
@@ -142,13 +169,16 @@ router.post('/users',
 - Lint code: `npm run lint`
 - Format code: `npm run format`
 
-## Security
+## Security Features
 
 - JWT for authentication
 - Helmet for security headers
 - Rate limiting for API protection
 - CORS configuration
 - Environment variable protection
+- Request validation
+- Error sanitization
+- Secure password handling
 
 ## Best Practices
 
@@ -159,6 +189,34 @@ router.post('/users',
 - Follow REST API conventions
 - Use async/await for asynchronous operations
 - Implement proper logging
+- Use middleware priorities correctly
+- Keep security in mind
+- Write clean, maintainable code
+
+## Error Handling
+
+The template includes a centralized error handling system:
+
+```javascript
+// Custom error
+class AppError extends Error {
+  constructor(message, status) {
+    super(message);
+    this.status = status;
+  }
+}
+
+// Usage
+throw new AppError('Resource not found', 404);
+```
+
+## Database
+
+- MongoDB with Mongoose
+- Connection pooling
+- Health checks
+- Error handling
+- Environment-based configuration
 
 ## License
 
