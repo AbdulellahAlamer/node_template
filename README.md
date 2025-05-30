@@ -4,9 +4,8 @@ A minimal, secure, and reusable Node.js backend template with Express and MongoD
 
 ## Features
 
-- Simple and reusable middleware system with priority-based execution
 - JWT authentication with secure token handling
-- Request validation with express-validator
+- Request validation
 - Centralized error handling
 - Environment-aware logging
 - Security middleware (Helmet, CORS, Rate Limiting)
@@ -23,18 +22,16 @@ A minimal, secure, and reusable Node.js backend template with Express and MongoD
 ├── config/
 │   └── db.js             # Database configuration
 ├── middleware/
-│   ├── auth.js           # Authentication middleware
-│   ├── base.js           # Base middleware factory
-│   ├── errorHandler.js   # Error handling middleware
-│   ├── logger.js         # Request logging
-│   ├── security.js       # Security middleware
-│   └── validator.js      # Request validation
+│   └── auth.js           # Authentication middleware
 ├── models/               # Database models
 ├── routes/              # API routes
+├── services/            # Business logic
 ├── utils/
 │   └── jwtUtils.js      # JWT utilities
+├── tests/               # Test files
 ├── config.env           # Environment variables
 ├── config.env.example   # Example environment variables
+├── API.md              # API documentation
 └── package.json         # Project dependencies
 ```
 
@@ -79,95 +76,15 @@ LOG_LEVEL=debug
 LOG_FORMAT=dev
 ```
 
-## Middleware System
+## Authentication
 
-The template uses a priority-based middleware system. Each middleware has a priority level that determines its execution order:
+The template uses JWT (JSON Web Tokens) for authentication:
 
-### Priority Levels
-- 1: Security & Logging (First)
-- 2: Validation
-- 3: Authentication
-- 100: Error Handler (Last)
-
-### Base Middleware
-- Factory pattern for creating middleware
-- Configurable priority and enabled state
-- Consistent middleware structure
-
-### Logger
-- Request logging with Morgan
-- Environment-aware logging format
-- Development: Detailed logs
-- Production: Minimal logs
-
-### Error Handler
-- Centralized error handling
-- Environment-aware error messages
-- Proper error status codes
-- Stack traces in development
-
-### Validator
-- Request validation using express-validator
-- Clear error messages
-- Async validation support
-- Custom validation rules
-
-### Auth
-- JWT token verification
-- Simple token extraction
-- User data attachment
-- Secure token handling
-
-### Security
-- Basic security headers with Helmet
-- CORS configuration
-- Rate limiting
-- Request sanitization
-
-## Usage Examples
-
-### Basic Route with Auth
-```javascript
-const { auth } = require('../middleware/auth');
-const { validator } = require('../middleware/validator');
-
-router.get('/protected', auth.fn, (req, res) => {
-  res.json({ user: req.user });
-});
-```
-
-### Route with Validation
-```javascript
-const { validator } = require('../middleware/validator');
-const { body } = require('express-validator');
-
-router.post('/users',
-  validator.fn([
-    body('email').isEmail(),
-    body('password').isLength({ min: 6 })
-  ]),
-  (req, res) => {
-    // Handle valid request
-  }
-);
-```
-
-### Custom Middleware
-```javascript
-const createMiddleware = require('./base');
-
-const customMiddleware = createMiddleware((req, res, next) => {
-  // Your middleware logic
-  next();
-}, { priority: 2 });
-```
-
-## Development
-
-- Start development server: `npm run dev`
-- Run tests: `npm test`
-- Lint code: `npm run lint`
-- Format code: `npm run format`
+- Token-based authentication
+- Secure token verification
+- Role-based access control
+- Password hashing with bcrypt
+- Token expiration handling
 
 ## Security Features
 
@@ -180,6 +97,24 @@ const customMiddleware = createMiddleware((req, res, next) => {
 - Error sanitization
 - Secure password handling
 
+## Development
+
+- Start development server: `npm run dev`
+- Run tests: `npm test`
+- Run tests with coverage: `npm run test:coverage`
+- Watch tests: `npm run test:watch`
+- Lint code: `npm run lint`
+- Format code: `npm run format`
+
+## Testing
+
+The project uses Jest for testing. Test files are located in the `tests` directory:
+
+- Unit tests for utilities
+- Integration tests for API endpoints
+- Authentication tests
+- Error handling tests
+
 ## Best Practices
 
 - Use environment variables for configuration
@@ -189,34 +124,30 @@ const customMiddleware = createMiddleware((req, res, next) => {
 - Follow REST API conventions
 - Use async/await for asynchronous operations
 - Implement proper logging
-- Use middleware priorities correctly
 - Keep security in mind
 - Write clean, maintainable code
+
+## API Documentation
+
+Detailed API documentation is available in [API.md](API.md), including:
+
+- Authentication endpoints
+- User management endpoints
+- Request/response formats
+- Error responses
+- Authentication requirements
 
 ## Error Handling
 
 The template includes a centralized error handling system:
 
-```javascript
-// Custom error
-class AppError extends Error {
-  constructor(message, status) {
-    super(message);
-    this.status = status;
-  }
-}
-
-// Usage
-throw new AppError('Resource not found', 404);
-```
-
-## Database
-
-- MongoDB with Mongoose
-- Connection pooling
-- Health checks
-- Error handling
-- Environment-based configuration
+- Environment-aware error messages
+- Proper error status codes
+- Stack traces in development
+- Consistent error response format
+- Validation error handling
+- Authentication error handling
+- Database error handling
 
 ## License
 

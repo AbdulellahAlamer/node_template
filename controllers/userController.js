@@ -1,4 +1,4 @@
-const userService = require('../services/userService');
+const userService = require('../services/userServices');
 
 // Get all users (admin only)
 const getAllUsers = async (req, res, next) => {
@@ -14,8 +14,11 @@ const getAllUsers = async (req, res, next) => {
     
     // Return sanitized user list (no passwords)
     const sanitizedUsers = users.map(user => {
-      const { password, ...userInfo } = user;
-      return userInfo;
+      const { password, ...userInfo } = user.toObject();
+      return {
+        ...userInfo,
+        id: userInfo._id // Convert _id to id for consistency
+      };
     });
     
     return res.json(sanitizedUsers);
@@ -23,7 +26,6 @@ const getAllUsers = async (req, res, next) => {
     next(error);
   }
 };
-
 
 // Get user by ID
 const getUserById = async (req, res, next) => {
@@ -45,9 +47,11 @@ const getUserById = async (req, res, next) => {
       });
     }
     
-    // Return sanitized user (no password)
-    const { password, ...userInfo } = user;
-    return res.json(userInfo);
+    const { password, _id, ...userInfo } = user.toObject();
+    return res.json({
+      ...userInfo,
+      id: _id // Convert _id to id for consistency
+    });
   } catch (error) {
     next(error);
   }
@@ -77,8 +81,11 @@ const updateUser = async (req, res, next) => {
     }
     
     // Return sanitized user (no password)
-    const { password: pass, ...userInfo } = updatedUser;
-    return res.json(userInfo);
+    const { password: pass, _id, ...userInfo } = updatedUser.toObject();
+    return res.json({
+      ...userInfo,
+      id: _id // Convert _id to id for consistency
+    });
   } catch (error) {
     next(error);
   }

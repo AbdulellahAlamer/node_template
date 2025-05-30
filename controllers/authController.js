@@ -1,5 +1,4 @@
-const authService = require('../services/authService');
-
+const authService = require('../services/authServices');
 
 // User registration controller
 const register = async (req, res, next) => {
@@ -21,14 +20,14 @@ const register = async (req, res, next) => {
     return res.status(201).json({
       message: 'User registered successfully',
       user: {
-        id: result.id,
+        id: result._id,
         username: result.username,
         email: result.email
       }
     });
   } catch (error) {
     // Check for duplicate key errors
-    if (error.message.includes('duplicate') || error.message.includes('unique')) {
+    if (error.code === 11000) {
       return res.status(409).json({
         error: 'Username or email already exists'
       });
@@ -38,22 +37,21 @@ const register = async (req, res, next) => {
   }
 };
 
-
 // User login controller
 const login = async (req, res, next) => {
   try {
-    const { username, password } = req.body;
+    const { email, password } = req.body;
     
     // Validate request
-    if (!username || !password) {
+    if (!email || !password) {
       return res.status(400).json({
         error: 'Missing required fields',
-        required: ['username', 'password']
+        required: ['email', 'password']
       });
     }
     
     // Login user
-    const result = await authService.loginUser(username, password);
+    const result = await authService.loginUser(email, password);
     
     if (!result.success) {
       return res.status(401).json({
@@ -65,8 +63,10 @@ const login = async (req, res, next) => {
     return res.json({
       token: result.token,
       user: {
+        id: result.user._id,
         username: result.user.username,
-        email: result.user.email
+        email: result.user.email,
+        role: result.user.role
       }
     });
   } catch (error) {
@@ -87,8 +87,11 @@ const getCurrentUser = async (req, res, next) => {
     }
     
     // Return user info (exclude password)
-    const { password, ...userInfo } = user;
-    return res.json(userInfo);
+    const { password, _id, ...userInfo } = user.toObject();
+    return res.json({
+      ...userInfo,
+      id: _id
+    });
   } catch (error) {
     next(error);
   }

@@ -1,17 +1,13 @@
 const bcrypt = require('bcrypt');
-const User = require('../models/user');
+const User = require('../models/userSchema');
 const { generateToken } = require('../utils/jwtUtils');
 
 const registerUser = async (username, password, email) => {
   try {
-    // Hash password before storing
-    const saltRounds = 10;
-    const hashedPassword = await bcrypt.hash(password, saltRounds);
-    
-    // Create new user
+    // Create new user (password will be hashed by the pre-save middleware)
     const newUser = await User.create({
       username,
-      password: hashedPassword,
+      password,
       email
     });
     
@@ -22,34 +18,37 @@ const registerUser = async (username, password, email) => {
   }
 };
 
-
 // Authenticate user login
-const loginUser = async (username, password) => {
+const loginUser = async (email, password) => {
   try {
-    // Find user by username
-    const user = await User.findByUsername(username);
+    // Find user by email
+    const user = await User.findByEmail(email).select('+password');
     
     // User not found
     if (!user) {
       return {
         success: false,
-        message: 'Invalid username or password'
+        message: 'Invalid email or password'
       };
     }
     
-    // Compare passwords
-    const passwordMatch = await bcrypt.compare(password, user.password);
+    // Compare passwords using the schema method
+    const passwordMatch = await user.comparePassword(password);
     
     if (!passwordMatch) {
       return {
         success: false,
-        message: 'Invalid username or password'
+        message: 'Invalid email or password'
       };
     }
     
+    // Update last login
+    user.lastLogin = new Date();
+    await user.save();
+    
     // Generate token
     const token = generateToken({
-      id: user.id,
+      id: user._id,
       username: user.username,
       role: user.role
     });
@@ -64,7 +63,6 @@ const loginUser = async (username, password) => {
     throw error;
   }
 };
-
 
 const getUserById = async (userId) => {
   try {
