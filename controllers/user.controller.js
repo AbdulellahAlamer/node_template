@@ -1,4 +1,4 @@
-const userService = require('../services/userServices');
+const userService = require('../services/user.service');
 
 // Get all users (admin only)
 const getAllUsers = async (req, res, next) => {

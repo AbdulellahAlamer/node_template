@@ -1,24 +1,17 @@
-require('dotenv').config();
 const mongoose = require('mongoose');
+const config = require('./config');
 
 // MongoDB connection
 const connect = async () => {
   try {
-    let connectionString = process.env.DATABASE;
+    let connectionString = config.db.uri;
     
     // Handle password replacement for MongoDB Atlas or authenticated connections
     if (connectionString.includes('<password>')) {
-      const password = process.env.DATABASE_PASSWORD || '';
-      connectionString = connectionString.replace('<password>', password);
+      connectionString = connectionString.replace('<password>', config.db.password);
     }
     
-    // MongoDB connection options
-    const options = {
-      useNewUrlParser: true,
-      useUnifiedTopology: true,
-    };
-    
-    await mongoose.connect(connectionString, options);
+    await mongoose.connect(connectionString, config.db.options);
     console.log(`MongoDB connected: ${connectionString.split('@')[0]}@***`);
     return { type: 'mongodb', isConnected: true };
   } catch (error) {
@@ -33,10 +26,18 @@ const checkHealth = async () => {
     const isConnected = mongoose.connection.readyState === 1;
     return {
       type: 'mongodb',
-      status: isConnected ? 'connected' : 'disconnected'
+      status: isConnected ? 'connected' : 'disconnected',
+      details: {
+        host: config.db.uri.split('@')[1]?.split('/')[0] || 'localhost',
+        database: config.db.uri.split('/').pop()?.split('?')[0] || 'node_template'
+      }
     };
   } catch (error) {
-    return { type: 'mongodb', status: 'error', error: error.message };
+    return { 
+      type: 'mongodb', 
+      status: 'error', 
+      error: error.message 
+    };
   }
 };
 

@@ -1,43 +1,33 @@
-require('dotenv').config();
 const express = require('express');
 const bodyParser = require('body-parser');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const morgan = require('morgan');
+const config = require('../config/config');
 const { connect, checkHealth } = require('../config/db');
 
 // Import routes
-const authRoutes = require('../routes/authRoutes');
-const userRoutes = require('../routes/userRoutes');
+const authRoutes = require('../routes/auth.routes');
+const userRoutes = require('../routes/user.routes');
 
 // Initialize app
 const app = express();
-const PORT = process.env.PORT || 3000;
-const API_PREFIX = process.env.API_PREFIX || '/api';
 
 // Security middleware
-app.use(helmet());
-app.use(cors({
-  origin: process.env.NODE_ENV === 'production' ? process.env.CORS_ORIGIN : '*',
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Auth']
-}));
+app.use(helmet(config.security.helmet));
+app.use(cors(config.security.cors));
 
 // Body parsing
 app.use(bodyParser.json());
 app.use(bodyParser.urlencoded({ extended: false }));
 
 // Rate limiting
-const limiter = rateLimit({
-  windowMs: parseInt(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
-  max: parseInt(process.env.RATE_LIMIT_MAX) || 100,
-  message: 'Too many requests from this IP, please try again later'
-});
-app.use(`${API_PREFIX}/`, limiter);
+const limiter = rateLimit(config.security.rateLimit);
+app.use(`${config.app.apiPrefix}/`, limiter);
 
 // Logging
-app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
+app.use(morgan(config.logging.morgan));
 
 // Health check
 app.get('/health', async (req, res) => {
@@ -46,6 +36,7 @@ app.get('/health', async (req, res) => {
     res.json({
       status: 'ok',
       timestamp: new Date().toISOString(),
+      environment: config.app.environment,
       database: health
     });
   } catch (error) {
@@ -57,8 +48,8 @@ app.get('/health', async (req, res) => {
 });
 
 // Routes
-app.use(`${API_PREFIX}/auth`, authRoutes);
-app.use(`${API_PREFIX}/users`, require('../middleware/auth'), userRoutes);
+app.use(`${config.app.apiPrefix}/auth`, authRoutes);
+app.use(`${config.app.apiPrefix}/users`, require('../middleware/protectRoute'), userRoutes);
 
 // 404 handler
 app.use((req, res) => {
@@ -73,13 +64,11 @@ app.use((err, req, res, next) => {
   console.error(err.stack);
   
   const status = err.status || 500;
-  const message = process.env.NODE_ENV === 'production' 
-    ? 'An error occurred' 
-    : err.message;
+  const message = config.app.isProduction ? 'An error occurred' : err.message;
 
   res.status(status).json({ 
     error: message,
-    ...(process.env.NODE_ENV === 'development' && { stack: err.stack })
+    ...(config.errorHandling.showStack && { stack: err.stack })
   });
 });
 
@@ -89,9 +78,9 @@ const startServer = async () => {
     await connect();
     console.log('Database connected successfully');
 
-    app.listen(PORT, () => {
-      console.log(`Server running in ${process.env.NODE_ENV} mode on port ${PORT}`);
-      console.log(`API available at http://localhost:${PORT}${API_PREFIX}`);
+    app.listen(config.app.port, () => {
+      console.log(`Server running in ${config.app.environment} mode on port ${config.app.port}`);
+      console.log(`API available at http://${config.app.host}:${config.app.port}${config.app.apiPrefix}`);
     });
   } catch (error) {
     console.error('Failed to start server:', error.message);
