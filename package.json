@@ -6,7 +6,11 @@
   "scripts": {
     "dev": "nodemon api/server.js",
     "start": "node api/server.js",
-    "test": "jest"
+    "test": "jest",
+    "test:watch": "jest --watch",
+    "test:coverage": "jest --coverage",
+    "lint": "eslint .",
+    "format": "prettier --write ."
   },
   "author": "Abdulellah",
   "license": "ISC",
@@ -18,13 +22,23 @@
     "express": "^4.21.2",
     "express-rate-limit": "^7.5.0",
     "helmet": "^7.2.0",
-    "jwt-simple": "^0.5.6",
+    "jsonwebtoken": "^9.0.2",
     "mongoose": "^7.8.7",
     "morgan": "^1.10.0"
   },
   "devDependencies": {
     "jest": "^29.6.0",
     "nodemon": "^3.0.1",
-    "supertest": "^6.3.3"
+    "supertest": "^6.3.3",
+    "eslint": "^8.50.0",
+    "prettier": "^3.0.0"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "collectCoverageFrom": [
+      "**/*.{js,jsx}",
+      "!node_modules/**",
+      "!coverage/**"
+    ]
   }
 }
