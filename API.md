@@ -1,189 +1,167 @@
-# API Documentation
+# REST API Reference
 
-This document provides detailed information about the API endpoints, request/response formats, and authentication requirements.
+> Base URL (local dev): **http://localhost:5000/api**
 
-## Base URL
-
-```
-http://localhost:5000/api
-```
-
-## Authentication
-
-All protected endpoints require a valid JWT token in the Authorization header:
+All protected routes expect a JWT in the `Authorization` header using the **Bearer** scheme:
 
 ```
 Authorization: Bearer <token>
 ```
 
-### Authentication Endpoints
+---
 
-#### Register User
-- **POST** `/auth/register`
-- **Description**: Register a new user
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "securepassword",
-    "name": "John Doe"
-  }
-  ```
-- **Response**:
-  ```json
-  {
-    "status": "success",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "email": "user@example.com",
-        "name": "John Doe"
-      },
-      "token": "jwt_token"
+## Authentication
+
+### Register
+|                     |                          |
+|---------------------|--------------------------|
+| **Method & Path**   | `POST /auth/register` |
+| **Auth Required**   | No                       |
+| **Description**     | Create a new user account |
+
+#### Request Body
+```json
+{
+  "username": "johndoe",
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+#### Response `201 Created`
+```json
+{
+  "status": "success",
+  "message": "User registered successfully",
+  "data": {
+    "user": {
+      "id": "65c2ab849bf42e219e20ff31",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "role": "user",
+      "status": "active"
     }
   }
-  ```
+}
+```
 
-#### Login
-- **POST** `/auth/login`
-- **Description**: Authenticate user and get token
-- **Request Body**:
-  ```json
-  {
-    "email": "user@example.com",
-    "password": "securepassword"
-  }
-  ```
-- **Response**:
-  ```json
-  {
-    "status": "success",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "email": "user@example.com",
-        "name": "John Doe"
-      },
-      "token": "jwt_token"
+### Login
+|                     |                          |
+|---------------------|--------------------------|
+| **Method & Path**   | `POST /auth/login` |
+| **Auth Required**   | No                       |
+| **Description**     | Authenticate a user and obtain a token |
+
+#### Request Body
+```json
+{
+  "email": "john@example.com",
+  "password": "password123"
+}
+```
+
+#### Response `200 OK`
+```json
+{
+  "status": "success",
+  "message": "Login successful",
+  "data": {
+    "token": "<jwt_token>",
+    "user": {
+      "id": "65c2ab849bf42e219e20ff31",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "role": "user",
+      "status": "active"
     }
   }
-  ```
+}
+```
 
-#### Get Current User
-- **GET** `/auth/me`
-- **Description**: Get current user profile
-- **Headers**: Requires authentication
-- **Response**:
-  ```json
-  {
-    "status": "success",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "email": "user@example.com",
-        "name": "John Doe"
-      }
+### Get Current User
+|                     |                          |
+|---------------------|--------------------------|
+| **Method & Path**   | `GET /auth/me` |
+| **Auth Required**   | Yes                      |
+| **Description**     | Retrieve the authenticated user's profile |
+
+#### Response `200 OK`
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": "65c2ab849bf42e219e20ff31",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "role": "user",
+      "status": "active",
+      "createdAt": "2025-05-31T12:00:00.000Z",
+      "updatedAt": "2025-05-31T12:00:00.000Z"
     }
   }
-  ```
+}
+```
 
-## User Management
+---
 
-### Get User Profile
-- **GET** `/users/:id`
-- **Description**: Get user profile by ID
-- **Headers**: Requires authentication
-- **Response**:
-  ```json
-  {
-    "status": "success",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "email": "user@example.com",
-        "name": "John Doe"
-      }
+## Users
+All routes below are **protected** and require authentication; endpoints marked *Admin only* also require the authenticated user to have the role `admin`.
+
+| Method | Path | Description |
+|--------|------|-------------|
+| `GET`  | `/users` | List all users <br>*Admin only* |
+| `GET`  | `/users/:id` | Get user by ID |
+| `PUT`  | `/users/:id` | Replace user document |
+| `PATCH`| `/users/:id` | Update (partial) user document |
+| `DELETE` | `/users/:id` | Delete user |
+
+#### Example — Get User by ID
+`GET /users/65c2ab849bf42e219e20ff31`
+```json
+{
+  "status": "success",
+  "data": {
+    "user": {
+      "id": "65c2ab849bf42e219e20ff31",
+      "username": "johndoe",
+      "email": "john@example.com",
+      "role": "user",
+      "status": "active"
     }
   }
-  ```
+}
+```
 
-### Update User Profile
-- **PATCH** `/users/:id`
-- **Description**: Update user profile
-- **Headers**: Requires authentication
-- **Request Body**:
-  ```json
-  {
-    "name": "Updated Name",
-    "email": "updated@example.com"
-  }
-  ```
-- **Response**:
-  ```json
-  {
-    "status": "success",
-    "data": {
-      "user": {
-        "id": "user_id",
-        "email": "updated@example.com",
-        "name": "Updated Name"
-      }
-    }
-  }
-  ```
+---
 
-## Error Responses
-
-All error responses follow this format:
+## Error format
+All errors follow the structure below. The `errors` array is included only when the error relates to field-level validation.
 
 ```json
 {
   "status": "error",
-  "message": "Error message",
+  "message": "Validation failed",
   "errors": [
-    {
-      "field": "field_name",
-      "message": "Validation error message"
-    }
+    { "field": "email", "message": "Email already exists" }
   ]
 }
 ```
 
-### Common Error Codes
+### Common status codes
+- **400** – Bad request / validation
+- **401** – Unauthorized (missing or invalid token)
+- **403** – Forbidden (insufficient permissions)
+- **404** – Resource not found
+- **409** – Conflict (duplicate key)
+- **500** – Internal server error
 
-- `400` - Bad Request
-- `401` - Unauthorized
-- `403` - Forbidden
-- `404` - Not Found
-- `422` - Validation Error
-- `500` - Internal Server Error
+---
 
-## Rate Limiting
+## Rate limiting & security
+- Global rate limit: **100 requests / 15 min** per IP (adjustable in `config.js`).
+- Helmet & CORS are enabled with sane defaults.
+- Tokens expire after 24 h.
+- All passwords are hashed with bcrypt (configurable salt rounds).
 
-API endpoints are rate-limited to prevent abuse:
-
-- 100 requests per 15 minutes for authenticated users
-- 50 requests per 15 minutes for unauthenticated users
-
-## Security
-
-- All endpoints use HTTPS in production
-- Passwords are hashed using bcrypt
-- JWT tokens expire after 24 hours
-- CORS is enabled for specified origins
-- Helmet security headers are enabled
-- Rate limiting is enabled
-- Request validation is enforced
-
-## Best Practices
-
-1. Always include the Authorization header for protected routes
-2. Handle rate limiting by implementing exponential backoff
-3. Validate request data before sending
-4. Handle errors appropriately
-5. Use proper HTTP methods for each operation
-6. Follow REST conventions
-7. Keep tokens secure and never expose them
-8. Implement proper error handling
-9. Use proper content types
-10. Follow the response format 
+---

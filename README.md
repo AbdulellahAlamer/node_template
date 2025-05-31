@@ -1,154 +1,108 @@
-# Node.js Backend Template
+# Node Template API
 
-A minimal, secure, and reusable Node.js backend template with Express and MongoDB. This template provides a solid foundation for building scalable APIs with best practices and security in mind.
+A lightweight, security-focused Node.js/Express starter powered by MongoDB & JWT authentication.
+
+---
 
 ## Features
+- **Express 4** with async/await controllers
+- **Mongoose** ODM with strict schemas
+- **JWT Auth** (header *or* Http-Only cookie) & role-based access control
+- Centralised **configuration** (`config.js`) with runtime validation
+- Security hardening: **Helmet**, **CORS**, **rate-limiting**, **bcrypt** password hashing
+- **Jest + Supertest** integration test example (`tests/auth.test.js`)
+- Single-file boot (`server.js`) – deploy anywhere (Node, Docker, serverless)
 
-- JWT authentication with secure token handling
-- Request validation
-- Centralized error handling
-- Environment-aware logging
-- Security middleware (Helmet, CORS, Rate Limiting)
-- MongoDB integration with health checks
-- Environment-based configuration
-- TypeScript support ready
+---
 
-## Project Structure
-
-```
+## File tree (trunk)
+\`\`\`
 .
-├── api/
-│   └── server.js          # Main application entry
-├── config/
-│   └── db.js             # Database configuration
-├── middleware/
-│   └── auth.js           # Authentication middleware
-├── models/               # Database models
-├── routes/              # API routes
-├── services/            # Business logic
-├── utils/
-│   └── jwtUtils.js      # JWT utilities
-├── tests/               # Test files
-├── config.env           # Environment variables
-├── config.env.example   # Example environment variables
-├── API.md              # API documentation
-└── package.json         # Project dependencies
-```
+├── server.js                # App entrypoint
+├── config.js                # Env-driven config loader/validator
+├── db.js                    # Database connection helper
+├── user.model.js            # Mongoose User schema
+├── auth.controller.js       # Auth endpoints logic
+├── user.controller.js       # User endpoints logic
+├── auth.routes.js           # /auth/* routes
+├── user.routes.js           # /users/* routes
+├── protectRoute.js          # JWT auth guard middleware
+├── adminAuth.js             # Admin-role guard middleware
+├── isAdmin.js               # Simple role checker
+├── services/
+│   ├── auth.service.js
+│   └── user.service.js
+├── tests/
+│   └── auth.test.js         # Integration test suite
+├── API.md                   # Full REST reference
+├── package.json
+└── config.env               # Environment variables
+\`\`\`
 
-## Quick Start
+*(An optional \`index.js\` wrapper may exist for serverless platforms such as Vercel.)*
 
-1. Clone the repository
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-3. Copy config.env.example to config.env and update values:
-   ```bash
-   cp config.env.example config.env
-   ```
-4. Start the development server:
-   ```bash
-   npm run dev
-   ```
+---
 
-## Configuration
+## Quick start
+\`\`\`bash
+# 1. Install deps
+npm install
 
-Create a config.env file with the following variables:
+# 2. Copy & edit env vars
+cp config.env.example config.env
 
-```
-# SERVER
-NODE_ENV=development
-PORT=5000
-API_PREFIX=/api
+# 3. Run in watch mode (nodemon)
+npm run dev
+# or start normally
+npm start
+\`\`\`
 
-# MONGODB
-DATABASE=mongodb+srv://username:<password>@cluster.mongodb.net/dbname
-DATABASE_PASSWORD=your_secure_password_here
+By default the server listens on **http://localhost:5000** and exposes its API under \`/api\` (configurable via \`API_PREFIX\`).
 
-# JWT
-JWT_SECRET=your-secret-key
+---
 
-# CORS
-CORS_ORIGIN=*
+## Environment variables (excerpt)
+| Key | Example | Notes |
+|-----|---------|-------|
+| \`NODE_ENV\` | \`development\` | \`production\` disables verbose errors |
+| \`PORT\` | \`5000\` | Listening port |
+| \`API_PREFIX\` | \`/api\` | Root path for all REST routes |
+| \`DATABASE\` | \`mongodb://localhost:27017/node_template\` | MongoDB connection URI (use \`<password>\` placeholder for Atlas) |
+| \`DATABASE_PASSWORD\` | \`s3cur3Pass!\` | Substitutes \`<password>\` in \`DATABASE\` |
+| \`JWT_SECRET\` | *32+ random chars* | **Required** in production |
+| \`JWT_EXPIRES_IN\` | \`24h\` | Token lifetime |
+| \`CORS_ORIGIN\` | \`http://localhost:3000\` | Accepts comma-separated list or \`*\` |
 
-# Logging
-LOG_LEVEL=debug
-LOG_FORMAT=dev
-```
+See **config.env.example** for the full list.
 
-## Authentication
+---
 
-The template uses JWT (JSON Web Tokens) for authentication:
+## Scripts
+| Command | What it does |
+|---------|--------------|
+| \`npm run dev\` | Start with **nodemon** (auto-reload) |
+| \`npm start\`   | Start once (production) |
+| \`npm test\`    | Run Jest tests |
+| \`npm run test:watch\` | Watch mode |
+| \`npm run test:coverage\` | Generate coverage report |
+| \`npm run lint\` | ESLint code quality |
+| \`npm run format\` | Format with Prettier |
 
-- Token-based authentication
-- Secure token verification
-- Role-based access control
-- Password hashing with bcrypt
-- Token expiration handling
-
-## Security Features
-
-- JWT for authentication
-- Helmet for security headers
-- Rate limiting for API protection
-- CORS configuration
-- Environment variable protection
-- Request validation
-- Error sanitization
-- Secure password handling
-
-## Development
-
-- Start development server: `npm run dev`
-- Run tests: `npm test`
-- Run tests with coverage: `npm run test:coverage`
-- Watch tests: `npm run test:watch`
-- Lint code: `npm run lint`
-- Format code: `npm run format`
+---
 
 ## Testing
+Tests live inside **tests/** and use an in-memory Mongo instance (or the URI defined in \`DATABASE_TEST\`).
+Run all tests:
+\`\`\`bash
+npm test
+\`\`\`
 
-The project uses Jest for testing. Test files are located in the `tests` directory:
+---
 
-- Unit tests for utilities
-- Integration tests for API endpoints
-- Authentication tests
-- Error handling tests
+## API docs
+The full REST contract (endpoints, payloads, examples) is kept in [API.md](API.md).
 
-## Best Practices
-
-- Use environment variables for configuration
-- Keep middleware simple and focused
-- Use proper error handling
-- Implement request validation
-- Follow REST API conventions
-- Use async/await for asynchronous operations
-- Implement proper logging
-- Keep security in mind
-- Write clean, maintainable code
-
-## API Documentation
-
-Detailed API documentation is available in [API.md](API.md), including:
-
-- Authentication endpoints
-- User management endpoints
-- Request/response formats
-- Error responses
-- Authentication requirements
-
-## Error Handling
-
-The template includes a centralized error handling system:
-
-- Environment-aware error messages
-- Proper error status codes
-- Stack traces in development
-- Consistent error response format
-- Validation error handling
-- Authentication error handling
-- Database error handling
+---
 
 ## License
-
-ISC
+ISC © 2025 Abdulellah
