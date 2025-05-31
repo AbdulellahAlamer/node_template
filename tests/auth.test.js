@@ -1,6 +1,6 @@
 const request = require('supertest');
 const app = require('../api/server');
-const User = require('../models/userSchema');
+const User = require('../models/user.model');
 
 describe('Auth Endpoints', () => {
   beforeEach(async () => {
