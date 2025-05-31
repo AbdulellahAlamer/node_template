@@ -1,10 +1,11 @@
 const jwt = require('jsonwebtoken');
 const User = require('../models/user.model');
+const config = require('../config/config');
 
-module.exports.protectRoute = async (req, res, next) => {
+const protectRoute = async (req, res, next) => {
   try {
     // Get token from cookie or Authorization header
-    let token = req.cookies.jwt;
+    let token = req.cookies?.jwt;
     
     // If no cookie, check Authorization header
     if (!token && req.headers.authorization && req.headers.authorization.startsWith('Bearer')) {
@@ -12,25 +13,65 @@ module.exports.protectRoute = async (req, res, next) => {
     }
     
     if (!token) {
-      return res.status(401).json({ error: "Unauthorized: No Token Provided" });
+      return res.status(401).json({ 
+        status: 'error',
+        message: 'Access denied. No token provided.' 
+      });
     }
 
-    const decoded = jwt.verify(token, process.env.JWT_SECRET);
+    // Verify token
+    const decoded = jwt.verify(token, config.jwt.secret);
 
     if (!decoded) {
-      return res.status(401).json({ error: "Unauthorized: Invalid Token" });
+      return res.status(401).json({ 
+        status: 'error',
+        message: 'Access denied. Invalid token.' 
+      });
     }
 
-    const user = await User.findById(decoded.userId).select("-password");
+    // Find user and exclude password
+    const user = await User.findById(decoded.id).select("-password");
 
     if (!user) {
-      return res.status(404).json({ error: "User not found" });
+      return res.status(404).json({ 
+        status: 'error',
+        message: 'User not found.' 
+      });
     }
 
+    // Check if user is active
+    if (user.status !== 'active') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Account is not active.'
+      });
+    }
+
+    // Add user to request object
     req.user = user;
     next();
-  } catch (err) {
-    console.log("Error in protectRoute middleware", err.message);
-    return res.status(500).json({ error: "Internal Server Error" });
+  } catch (error) {
+    console.error("Error in protectRoute middleware:", error.message);
+    
+    if (error.name === 'JsonWebTokenError') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Access denied. Invalid token.'
+      });
+    }
+    
+    if (error.name === 'TokenExpiredError') {
+      return res.status(401).json({
+        status: 'error',
+        message: 'Access denied. Token expired.'
+      });
+    }
+    
+    return res.status(500).json({ 
+      status: 'error',
+      message: 'Internal server error.' 
+    });
   }
 };
+
+module.exports = protectRoute;
